@@ -1,2 +1,1 @@
-# edit.line.2.windows
-editor edlin.py a base editor wait for null enter to exit edit
+1.44 flopy disk builder and format use dd command to create a empty floppy and run f144 name.img to format disket
