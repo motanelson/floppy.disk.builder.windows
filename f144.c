@@ -1,6 +1,7 @@
-//gcc -o f144 f144.c
+//gcc -o f144 f144.c -lc
 #include<stdlib.h>
 #include<stdio.h>
+#include<string.h>
 unsigned char heads[] = {
   0xeb, 0x3c, 0x90, 0x6d, 0x6b, 0x66, 0x73, 0x2e, 0x66, 0x61, 0x74, 0x00,
   0x02, 0x01, 0x01, 0x00, 0x02, 0xe0, 0x00, 0x40, 0x0b, 0xf0, 0x09, 0x00,
@@ -30,12 +31,22 @@ unsigned int heads_len = 192;
 unsigned int heads2_len = 5;
 unsigned int heads3_len = 3;
 int main(int argc,char *argv[]){
+    char c[4096*2];
+    char *cc=c;
     int i=0;
+    int n;
     FILE *f1;
+    FILE *f2;
     char *memorys=heads;
     char *memorys2=heads2;
     char *memorys3=heads3;
     if(argc>1){
+        n=4096*2;
+        memset(cc,0,n);
+        n=0;
+        f2=fopen(argv[1],"w");
+        for(n=0;n<180;n++)fwrite(cc,4096*2,1,f2);
+        fclose(f2);
         f1=fopen(argv[1],"r+");
         fwrite(memorys,heads_len,1,f1);
         fseek(f1, 0x1fe, SEEK_SET);  
