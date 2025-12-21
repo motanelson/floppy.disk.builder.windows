@@ -48,7 +48,7 @@ int main(int argc,char *argv[]){
         memset(cc,0,n);
         n=0;
         f2=fopen(argv[1],"w");
-        for(n=0;n<180;n++)fwrite(cc,4096*2,1,f2);
+        for(n=0;n<90;n++)fwrite(cc,4096*2,1,f2);
         fclose(f2);
         f1=fopen(argv[1],"r+");
         fwrite(memorys,heads_len,1,f1);
