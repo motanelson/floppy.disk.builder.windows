@@ -1,91 +1,96 @@
-//gcc -o f750M f750M.c -lc
-#include<stdlib.h>
-#include<stdio.h>
-#include<string.h>
-unsigned char heads[] = {
-  0xeb, 0x58, 0x90, 0x6d, 0x6b, 0x66, 0x73, 0x2e, 0x66, 0x61, 0x74, 0x00,
-  0x02, 0x08, 0x20, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0xf8, 0x00, 0x00,
-  0x3f, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc4, 0x6f, 0x17, 0x00,
-  0xe0, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
-  0x01, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x29, 0xdc, 0x76, 0x3c, 0x02, 0x4e,
-  0x4f, 0x20, 0x4e, 0x41, 0x4d, 0x45, 0x20, 0x20, 0x20, 0x20, 0x46, 0x41,
-  0x54, 0x33, 0x32, 0x20, 0x20, 0x20, 0x0e, 0x1f, 0xbe, 0x77, 0x7c, 0xac,
-  0x22, 0xc0, 0x74, 0x0b, 0x56, 0xb4, 0x0e, 0xbb, 0x07, 0x00, 0xcd, 0x10,
-  0x5e, 0xeb, 0xf0, 0x32, 0xe4, 0xcd, 0x16, 0xcd, 0x19, 0xeb, 0xfe, 0x54,
-  0x68, 0x69, 0x73, 0x20, 0x69, 0x73, 0x20, 0x6e, 0x6f, 0x74, 0x20, 0x61,
-  0x20, 0x62, 0x6f, 0x6f, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x20, 0x64, 0x69,
-  0x73, 0x6b, 0x2e, 0x20, 0x20, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20,
-  0x69, 0x6e, 0x73, 0x65, 0x72, 0x74, 0x20, 0x61, 0x20, 0x62, 0x6f, 0x6f,
-  0x74, 0x61, 0x62, 0x6c, 0x65, 0x20, 0x66, 0x6c, 0x6f, 0x70, 0x70, 0x79,
-  0x20, 0x61, 0x6e, 0x64, 0x0d, 0x0a, 0x70, 0x72, 0x65, 0x73, 0x73, 0x20
-};
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
 
+#define SECTOR_SIZE 512
+#define TOTAL_SECTORS 1536000
+#define RESERVED_SECTORS 32
+#define SECTORS_PER_FAT 1500
+#define SECTORS_PER_CLUSTER 32
 
+void write_sector(FILE *f, uint32_t sector, const void *buf) {
+    fseek(f, sector * SECTOR_SIZE, SEEK_SET);
+    fwrite(buf, SECTOR_SIZE, 1, f);
+}
 
+int main(int argc, char **argv) {
+    if (argc < 2) return 1;
 
+    FILE *f = fopen(argv[1], "wb+");
+    if (!f) return 1;
 
+    /* criar ficheiro com tamanho final */
+    fseek(f, TOTAL_SECTORS * SECTOR_SIZE - 1, SEEK_SET);
+    fputc(0, f);
 
-unsigned char heads2[] = {
-    0x55,0xAA , 0x52 , 0x52 , 0x61 , 0x41
-};
-unsigned char heads3[] = {
-   0x55,0xAA,0x0 ,0x0,0x0,0x0,0x72,0x72,0x41,0x61,0x7B,0xEC,0x02,0x0,0x2
-};
-unsigned char heads4[] = {
-     0x55,0xAA 
-};
+    /* ---------------- Boot Sector ---------------- */
+    uint8_t boot[SECTOR_SIZE];
+    memset(boot, 0, sizeof(boot));
 
-unsigned char heads5[] = {
+    boot[0] = 0xEB; boot[1] = 0x58; boot[2] = 0x90;
+    memcpy(&boot[3], "ZIP750  ", 8);
 
-0xF8,0xFF,0xFF,0x0F,0xFF,0xFF,0xFF,0x0F,0xF8,0xFF,0xFF,0x0F
-};
-unsigned int heads_len = 192;
-unsigned int heads2_len = 6;
-unsigned int heads3_len = 15;
-unsigned int heads4_len = 2;
-unsigned int heads5_len = 12;
-int main(int argc,char *argv[]){
-    int k=1024;
-    int bb=k/2;
-    int m=k*k;
-    int g=m*k;
-    int t=g*k;
-    char c[4096*2];
-    char *cc=c;
-    int i=0;
-    int n;
-    FILE *f1;
-    FILE *f2;
-    char *memorys=heads;
-    char *memorys2=heads2;
-    char *memorys3=heads3;
-    char *memorys4=heads4;
-    char *memorys5=heads5;
-    if(argc>1){
-        n=4096*2;
-        memset(cc,0,n);
-        n=0;
-        f2=fopen(argv[1],"w");
-        for(n=0;n<96000;n++)fwrite(cc,4096*2,1,f2);
-        fclose(f2);
-        f1=fopen(argv[1],"r+");
-        fwrite(memorys,heads_len,1,f1);
-        fseek(f1, 0x1fe, SEEK_SET);  
-        fwrite(memorys2,heads2_len,1,f1);
-        fseek(f1, 0x3de, SEEK_SET);
-        fwrite(memorys3,heads3_len,1,f1);
-        fseek(f1, 0xc00, SEEK_SET);
-        fwrite(memorys,heads_len,1,f1);
-        fseek(f1, 0xc00+0x1fe, SEEK_SET);  
-        fwrite(memorys2,heads2_len,1,f1);
-        fseek(f1, 0xc00+0x3de, SEEK_SET);
-        fwrite(memorys3,3,1,f1);
-        fseek(f1, 0x4000, SEEK_SET);
-        fwrite(memorys5,heads5_len,1,f1);
+    *(uint16_t*)&boot[11] = SECTOR_SIZE;
+    boot[13] = SECTORS_PER_CLUSTER;
+    *(uint16_t*)&boot[14] = RESERVED_SECTORS;
+    boot[16] = 2;
 
-        fclose(f1);
+    boot[21] = 0xF8;
+    *(uint32_t*)&boot[32] = TOTAL_SECTORS;
+    *(uint32_t*)&boot[36] = SECTORS_PER_FAT;
 
-    }
+    *(uint32_t*)&boot[44] = 2;    // root cluster
+    *(uint16_t*)&boot[48] = 1;    // FSInfo
+    *(uint16_t*)&boot[50] = 6;    // backup boot
+
+    boot[510] = 0x55;
+    boot[511] = 0xAA;
+
+    write_sector(f, 0, boot);
+
+    /* ---------------- FSInfo ---------------- */
+    uint8_t fsinfo[SECTOR_SIZE];
+    memset(fsinfo, 0, sizeof(fsinfo));
+
+    *(uint32_t*)&fsinfo[0]   = 0x41615252; // RRaA
+    *(uint32_t*)&fsinfo[484] = 0x61417272; // rrAa
+    *(uint32_t*)&fsinfo[488] = 0xFFFFFFFF;
+    *(uint32_t*)&fsinfo[492] = 0xFFFFFFFF;
+
+    fsinfo[510] = 0x55;
+    fsinfo[511] = 0xAA;
+
+    write_sector(f, 1, fsinfo);
+
+    /* ---------------- Backup Boot ---------------- */
+    write_sector(f, 6, boot);
+
+    /* ---------------- FATs ---------------- */
+    uint32_t fat_start = RESERVED_SECTORS;
+    uint8_t fat[SECTOR_SIZE];
+    memset(fat, 0, sizeof(fat));
+
+    /* FAT32 entries iniciais */
+    *(uint32_t*)&fat[0] = 0x0FFFFFF8; // cluster 0
+    *(uint32_t*)&fat[4] = 0x0FFFFFFF; // cluster 1
+    *(uint32_t*)&fat[8] = 0x0FFFFFFF; // cluster 2 (root)
+
+    /* FAT #1 */
+    write_sector(f, fat_start, fat);
+    /* FAT #2 */
+    write_sector(f, fat_start + SECTORS_PER_FAT, fat);
+
+    /* ---------------- Root directory (cluster 2) ---------------- */
+    uint32_t data_start = RESERVED_SECTORS + 2 * SECTORS_PER_FAT;
+    uint32_t root_sector = data_start;
+
+    uint8_t zero[SECTOR_SIZE];
+    memset(zero, 0, sizeof(zero));
+
+    for (int i = 0; i < SECTORS_PER_CLUSTER; i++)
+        write_sector(f, root_sector + i, zero);
+
+    fclose(f);
     return 0;
 }
+
