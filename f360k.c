@@ -1,63 +1,119 @@
-//gcc -o f360k f360k.c -lc
-#include<stdlib.h>
-#include<stdio.h>
-#include<string.h>
-unsigned char heads[]  = {
-  0xeb, 0x3c, 0x90, 0x6d, 0x6b, 0x66, 0x73, 0x2e, 0x66, 0x61, 0x74, 0x00,
-  0x02, 0x02, 0x01, 0x00, 0x02, 0x70, 0x00, 0xd0, 0x02, 0xfd, 0x02, 0x00,
-  0x09, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x29, 0x3d, 0x24, 0x2f, 0xbf, 0x4e, 0x4f, 0x20, 0x4e, 0x41,
-  0x4d, 0x45, 0x20, 0x20, 0x20, 0x20, 0x46, 0x41, 0x54, 0x31, 0x32, 0x20,
-  0x20, 0x20, 0x0e, 0x1f, 0xbe, 0x5b, 0x7c, 0xac, 0x22, 0xc0, 0x74, 0x0b,
-  0x56, 0xb4, 0x0e, 0xbb, 0x07, 0x00, 0xcd, 0x10, 0x5e, 0xeb, 0xf0, 0x32,
-  0xe4, 0xcd, 0x16, 0xcd, 0x19, 0xeb, 0xfe, 0x54, 0x68, 0x69, 0x73, 0x20,
-  0x69, 0x73, 0x20, 0x6e, 0x6f, 0x74, 0x20, 0x61, 0x20, 0x62, 0x6f, 0x6f,
-  0x74, 0x61, 0x62, 0x6c, 0x65, 0x20, 0x64, 0x69, 0x73, 0x6b, 0x2e, 0x20,
-  0x20, 0x50, 0x6c, 0x65, 0x61, 0x73, 0x65, 0x20, 0x69, 0x6e, 0x73, 0x65,
-  0x72, 0x74, 0x20, 0x61, 0x20, 0x62, 0x6f, 0x6f, 0x74, 0x61, 0x62, 0x6c,
-  0x65, 0x20, 0x66, 0x6c, 0x6f, 0x70, 0x70, 0x79, 0x20, 0x61, 0x6e, 0x64,
-  0x0d, 0x0a, 0x70, 0x72, 0x65, 0x73, 0x73, 0x20, 0x61, 0x6e, 0x79, 0x20,
-  0x6b, 0x65, 0x79, 0x20, 0x74, 0x6f, 0x20, 0x74, 0x72, 0x79, 0x20, 0x61,
-  0x67, 0x61, 0x69, 0x6e, 0x20, 0x2e, 0x2e, 0x2e, 0x20, 0x0d, 0x0a, 0x00
-};
+// gcc -Wall -O2 -o f360k f360k.c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
 
+#define SECTOR_SIZE     512
+#define DISK_SIZE_360K  (360 * 1024)
 
+/* ===== BOOT SECTOR FIELDS ===== */
 
-unsigned char heads2[] = {
-    0x55,0xAA ,0xFD, 0xFF, 0xFF
-};
-unsigned char heads3[] = {
-    0xFD, 0xFF, 0xFF
-};
+/* Jump + OEM */
+uint8_t  BS_jmpBoot[3]   = { 0xEB, 0x3C, 0x90 };
+char     BS_OEMName[8]   = "mkfsfat";
 
-unsigned int heads_len = 192;
-unsigned int heads2_len = 5;
-unsigned int heads3_len = 3;
-int main(int argc,char *argv[]){
-    char c[4096*2];
-    char *cc=c;
-    int i=0;
-    int n;
-    FILE *f1;
-    FILE *f2;
-    char *memorys=heads;
-    char *memorys2=heads2;
-    char *memorys3=heads3;
-    if(argc>1){
-        n=4096*2;
-        memset(cc,0,n);
-        n=0;
-        f2=fopen(argv[1],"w");
-        for(n=0;n<45;n++)fwrite(cc,4096*2,1,f2);
-        fclose(f2);
-        f1=fopen(argv[1],"r+");
-        fwrite(memorys,heads_len,1,f1);
-        fseek(f1, 0x1fe, SEEK_SET);  
-        fwrite(memorys2,heads2_len,1,f1);
-        fseek(f1, 0x600, SEEK_SET);
-        fwrite(memorys3,heads3_len,1,f1);
-        fclose(f1);
+/* BPB */
+uint16_t BPB_BytsPerSec  = 512;
+uint8_t  BPB_SecPerClus  = 2;
+uint16_t BPB_RsvdSecCnt  = 1;
+uint8_t  BPB_NumFATs     = 2;
+uint16_t BPB_RootEntCnt  = 112;
+uint16_t BPB_TotSec16    = 720;
+uint8_t  BPB_Media       = 0xFD;
+uint16_t BPB_FATSz16     = 2;
+uint16_t BPB_SecPerTrk   = 9;
+uint16_t BPB_NumHeads    = 2;
+uint32_t BPB_HiddSec     = 0;
+uint32_t BPB_TotSec32    = 0;
 
+/* Extended BPB */
+uint8_t  BS_DrvNum       = 0;
+uint8_t  BS_Reserved1   = 0;
+uint8_t  BS_BootSig     = 0x29;
+uint32_t BS_VolID       = 0xBF2F243D;
+char     BS_VolLab[11]   = "NO NAME    ";
+char     BS_FilSysType[8] = "FAT12   ";
+
+/* FAT init */
+uint8_t FAT_init[3] = { 0xFD, 0xFF, 0xFF };
+
+static void write_boot_sector(FILE *f) {
+    uint8_t sector[SECTOR_SIZE];
+    memset(sector, 0, sizeof(sector));
+
+    memcpy(sector + 0x00, BS_jmpBoot, 3);
+    memcpy(sector + 0x03, BS_OEMName, 8);
+
+    memcpy(sector + 0x0B, &BPB_BytsPerSec, 2);
+    memcpy(sector + 0x0D, &BPB_SecPerClus, 1);
+    memcpy(sector + 0x0E, &BPB_RsvdSecCnt, 2);
+    memcpy(sector + 0x10, &BPB_NumFATs, 1);
+    memcpy(sector + 0x11, &BPB_RootEntCnt, 2);
+    memcpy(sector + 0x13, &BPB_TotSec16, 2);
+    memcpy(sector + 0x15, &BPB_Media, 1);
+    memcpy(sector + 0x16, &BPB_FATSz16, 2);
+    memcpy(sector + 0x18, &BPB_SecPerTrk, 2);
+    memcpy(sector + 0x1A, &BPB_NumHeads, 2);
+    memcpy(sector + 0x1C, &BPB_HiddSec, 4);
+    memcpy(sector + 0x20, &BPB_TotSec32, 4);
+
+    memcpy(sector + 0x24, &BS_DrvNum, 1);
+    memcpy(sector + 0x25, &BS_Reserved1, 1);
+    memcpy(sector + 0x26, &BS_BootSig, 1);
+    memcpy(sector + 0x27, &BS_VolID, 4);
+    memcpy(sector + 0x2B, BS_VolLab, 11);
+    memcpy(sector + 0x36, BS_FilSysType, 8);
+
+    sector[510] = 0x55;
+    sector[511] = 0xAA;
+
+    fwrite(sector, SECTOR_SIZE, 1, f);
+}
+
+int main(int argc, char *argv[]) {
+    FILE *f;
+    uint8_t zero[SECTOR_SIZE];
+    int i;
+
+    if (argc != 2) {
+        printf("uso: %s imagem.img\n", argv[0]);
+        return 1;
     }
+
+    memset(zero, 0, sizeof(zero));
+
+    /* criar imagem vazia */
+    f = fopen(argv[1], "wb");
+    if (!f) {
+        perror("fopen");
+        return 1;
+    }
+
+    for (i = 0; i < DISK_SIZE_360K / SECTOR_SIZE; i++)
+        fwrite(zero, SECTOR_SIZE, 1, f);
+
+    fclose(f);
+
+    /* escrever boot + FAT */
+    f = fopen(argv[1], "rb+");
+    if (!f) {
+        perror("fopen");
+        return 1;
+    }
+
+    write_boot_sector(f);
+
+    /* FAT 1 */
+    fseek(f, SECTOR_SIZE, SEEK_SET);
+    fwrite(FAT_init, sizeof(FAT_init), 1, f);
+
+    /* FAT 2 */
+    fseek(f, SECTOR_SIZE * (1 + BPB_FATSz16), SEEK_SET);
+    fwrite(FAT_init, sizeof(FAT_init), 1, f);
+
+    fclose(f);
+
+    puts("Imagem FAT12 360K criada com sucesso.");
     return 0;
 }
